@@ -16,7 +16,7 @@ k.loadSprite("fence", "sprites/fence.png");
 k.loadSprite("fort_top", "sprites/fort_top.png");
 k.loadSprite("fort", "sprites/fort.png");
 k.loadSprite("brick", "sprites/brick.png");
-
+k.setBackground(237, 237, 237);
 
 const COYOTE_TIME = 0.1;
 const ACCELERATION = 2000;
