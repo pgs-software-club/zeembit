@@ -20,6 +20,8 @@ k.loadSprite("slope", "sprites/slope.png");
 k.loadSprite("hat", "sprites/hat.png");
 k.loadSprite("hat1", "sprites/hat1.png");
 k.loadSprite("bounce", "sprites/tramp.png");
+k.loadSprite("bridge", "sprites/bridge.png");
+k.loadSprite("bridge_arc", "sprites/bridge_arc.png");
 
 
 
@@ -93,8 +95,8 @@ const levelLayout = [
     "b                        b",
     "b     ==  w              b",
     "bB        o              b",
-    "b=-==\\    affff         b",
-    "======-==b=====--=========",
+    "b=g==\\    afffff         b",
+    "======g==b=-nnn-==gg======",
 ];
 
 
@@ -115,7 +117,7 @@ k.scene("game", () => {
         "=": () => [
             k.sprite("ground"), k.anchor("bot"), k.area(), k.body({ isStatic: true }),
         ],
-        "-": () => [
+        "g": () => [
             k.sprite("ground1"), k.anchor("bot"), k.area(), k.body({ isStatic: true }),
         ],
         "b": () => [
@@ -126,9 +128,17 @@ k.scene("game", () => {
         ],
         "B": () => [
            k.sprite("bounce"), k.anchor("bot"), k.area({
-            shape: new k.Rect(k.vec2(0), 150, 70)
+            shape: new k.Rect(k.vec2(0), LEVEL_TILE_WIDTH, 70)
            }), k.body({ isStatic: true }), k.z(0),
             "bouncing_block",
+        ],
+        "-": () => [
+           k.sprite("bridge"), k.anchor("bot"), k.area({
+            shape: new k.Rect(k.vec2(0, -90), LEVEL_TILE_WIDTH, 60)
+           }), k.body({ isStatic: true }), k.z(0),
+        ],
+        "n": () => [
+           k.sprite("bridge_arc"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
         ],
         "/": () => [
             k.sprite("slope", {flipX: true}),
@@ -278,6 +288,7 @@ k.scene("game", () => {
             }
         }
     });
+
 
     k.onUpdate(() => {
         if (players.length === 0) return;
