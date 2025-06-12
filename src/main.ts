@@ -281,11 +281,11 @@ k.scene("game", () => {
 
     k.onCollide("player_entity", "bouncing_block", (playerObj, block, collision) => {
         if (!collision.isTop()) {
-            if (playerObj.vel.y > 0) { 
+            // if (playerObj.vel.y > 0) { 
                 playerObj.jump(BOUNCE_FORCE);
                 playerObj.jumpsUsed = 0;
                 playerObj.coyoteTimer = 0; 
-            }
+            // }
         }
     });
 
