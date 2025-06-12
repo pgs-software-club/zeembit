@@ -146,7 +146,21 @@ k.scene("game", () => {
 
     playersConfig.forEach(player => {
         tilesConfig[player.spawnChar] = () => [
-            k.sprite(player.sprite), k.area(), k.anchor("bot"), k.body(), k.z(10), player.tag
+            k.sprite(player.sprite),
+            k.area({
+                shape: new k.Polygon([
+                    k.vec2(-BEAN_WIDTH * 0.2, 0),
+                    k.vec2(BEAN_WIDTH * 0.2, 0),
+                    k.vec2(BEAN_WIDTH * 0.5, -BEAN_HEIGHT * 0.2),
+                    k.vec2(BEAN_WIDTH * 0.4, -BEAN_HEIGHT * 0.95),
+                    k.vec2(-BEAN_WIDTH * 0.4, -BEAN_HEIGHT * 0.95),
+                    k.vec2(-BEAN_WIDTH * 0.5, -BEAN_HEIGHT * 0.2)
+                ])
+            }),
+            k.z(10),
+            k.anchor("bot"), 
+            k.body(),
+            player.tag
         ];
     });
 
