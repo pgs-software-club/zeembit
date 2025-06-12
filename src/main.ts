@@ -19,6 +19,7 @@ k.loadSprite("brick", "sprites/brick.png");
 k.loadSprite("slope", "sprites/slope.png");
 k.loadSprite("hat", "sprites/hat.png");
 k.loadSprite("hat1", "sprites/hat1.png");
+k.loadSprite("bounce", "sprites/tramp.png");
 
 
 
@@ -29,6 +30,7 @@ const ACCELERATION = 2000;
 const MAX_HORZ_SPEED = SPEED;
 const FRICTION_GROUND = 1000;
 
+const BOUNCE_FORCE = 1700;
 
 
 const playersConfig = [
@@ -81,18 +83,18 @@ const playersConfig = [
 ];
 
 const levelLayout = [
-    "b    %                &   ",
-    "b   ===              ===  ",
-    "b   @           $         ",
-    "b                         ",
-    "b                         ",
-    "b           ====          ",
-    "b                         ",
-    "b                         ",
-    "b     ==  w               ",
-    "b         o               ",
-    "b=-==\\    affff           ",
-    "======-==b=====--========",
+    "b    %                &  b",
+    "b   ===              === b",
+    "b   @           $        b",
+    "b                        b",
+    "b                        b",
+    "b           ====         b",
+    "b                        b",
+    "b                        b",
+    "b     ==  w              b",
+    "bB        o              b",
+    "b=-==\\    affff         b",
+    "======-==b=====--=========",
 ];
 
 
@@ -122,6 +124,12 @@ k.scene("game", () => {
         "o": () => [
             k.sprite("fort"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0)
         ],
+        "B": () => [
+           k.sprite("bounce"), k.anchor("bot"), k.area({
+            shape: new k.Rect(k.vec2(0), 150, 70)
+           }), k.body({ isStatic: true }), k.z(0),
+            "bouncing_block",
+        ],
         "/": () => [
             k.sprite("slope", {flipX: true}),
             k.area({
@@ -133,6 +141,7 @@ k.scene("game", () => {
             }),
             k.anchor("bot"),
             k.body({ isStatic: true }),
+            k.z(0),
             "slope_tile",
         ],
         "\\": () => [
@@ -146,6 +155,7 @@ k.scene("game", () => {
             }),
             k.anchor("bot"), 
             k.body({ isStatic: true }),
+            k.z(0),
             "slope_tile_right", 
         ],
         "f": () => [
@@ -259,6 +269,16 @@ k.scene("game", () => {
         }
     });
 
+    k.onCollide("player_entity", "bouncing_block", (playerObj, block, collision) => {
+        if (!collision.isTop()) {
+            if (playerObj.vel.y > 0) { 
+                playerObj.jump(BOUNCE_FORCE);
+                playerObj.jumpsUsed = 0;
+                playerObj.coyoteTimer = 0; 
+            }
+        }
+    });
+
     k.onUpdate(() => {
         if (players.length === 0) return;
 
@@ -363,4 +383,3 @@ k.scene("game", () => {
 
 
 k.go("game");
-
