@@ -1,7 +1,7 @@
 import kaplay, { AnchorComp, AreaComp, GameObj, PosComp, ScaleComp, TextComp } from "kaplay";
 
 const k = kaplay();
-const SPEED = 600;
+const SPEED = 1000;
 k.setGravity(2400);
 
 k.loadRoot("./");
@@ -17,6 +17,9 @@ k.loadSprite("fort_top", "sprites/fort_top.png");
 k.loadSprite("fort", "sprites/fort.png");
 k.loadSprite("brick", "sprites/brick.png");
 k.loadSprite("slope", "sprites/slope.png");
+k.loadSprite("hat", "sprites/hat.png");
+k.loadSprite("hat1", "sprites/hat1.png");
+
 
 
 k.setBackground(237, 237, 237);
@@ -24,7 +27,7 @@ k.setBackground(237, 237, 237);
 const COYOTE_TIME = 0.1;
 const ACCELERATION = 2000;
 const MAX_HORZ_SPEED = SPEED;
-const FRICTION_GROUND = 600;
+const FRICTION_GROUND = 1000;
 
 
 
@@ -38,6 +41,7 @@ const playersConfig = [
             left: "a",
             right: "d",
         },
+        headSprite: "hat",
     },
     {
         tag: "player2",
@@ -48,6 +52,7 @@ const playersConfig = [
             left: "left",
             right: "right",
         },
+        headSprite: "hat1",
     },
     {
         tag: "player3",
@@ -82,10 +87,14 @@ const levelLayout = [
     "b                         ",
     "b     ==  w               ",
     "b         o               ",
-    "b   /\\    affff           ",
+    "b=-==\\    affff           ",
     "======-==b=====--========",
 ];
 
+
+// setInterval(()=>{
+//     k.debug.log(k.debug.fps())
+// }, 100)
 
 k.scene("game", () => {
     // k.debug.inspect = true;
@@ -93,6 +102,9 @@ k.scene("game", () => {
     const LEVEL_TILE_HEIGHT = 145;
     const BEAN_WIDTH = 97;
     const BEAN_HEIGHT = 147;
+    const HAT_WIDTH = 115;
+
+
     const tilesConfig = {
         "=": () => [
             k.sprite("ground"), k.anchor("bot"), k.area(), k.body({ isStatic: true }),
@@ -125,7 +137,7 @@ k.scene("game", () => {
                 shape: new k.Polygon([
                     k.vec2(0  - LEVEL_TILE_WIDTH / 2, 0),
                     k.vec2( 0 + LEVEL_TILE_WIDTH / 2, 0),
-                    k.vec2(0 - LEVEL_TILE_WIDTH / 2, -LEVEL_TILE_HEIGHT) 
+                    k.vec2(0 - (LEVEL_TILE_WIDTH / 2), -LEVEL_TILE_HEIGHT - 7) 
                 ]),
             }),
             k.anchor("bot"), 
@@ -155,12 +167,13 @@ k.scene("game", () => {
                     k.vec2(BEAN_WIDTH * 0.4, -BEAN_HEIGHT * 0.95),
                     k.vec2(-BEAN_WIDTH * 0.4, -BEAN_HEIGHT * 0.95),
                     k.vec2(-BEAN_WIDTH * 0.5, -BEAN_HEIGHT * 0.2)
-                ])
+                ]),
             }),
             k.z(10),
             k.anchor("bot"), 
             k.body(),
-            player.tag
+            player.tag,
+            "player_entity"
         ];
     });
 
@@ -185,10 +198,21 @@ k.scene("game", () => {
                 jumpBufferTimer: 0,
                 isGroundedPrevFrame: false,
             });
+
+            if (playerConfig.headSprite) {
+                playerInstance.add([
+                    k.sprite(playerConfig.headSprite, { width: HAT_WIDTH }), 
+                    k.pos(0, -BEAN_HEIGHT + 35 ),
+                    k.anchor("bot"), 
+                    "hat",
+                ]);
+            }
         }
     });
 
-    players.forEach(({ instance, config }) => {
+
+    players.forEach(player => { // Changed back to player instead of destructuring for clarity
+        const { instance, config } = player;
         k.onKeyPress(config.keybinds.jump, () => {
             const isCurrentlyGrounded = instance.isGrounded();
             const canCoyoteJump = instance.coyoteTimer > 0;
