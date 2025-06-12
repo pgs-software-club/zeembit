@@ -42,6 +42,7 @@ const playersConfig = [
             right: "d",
         },
         headSprite: "hat",
+        playerColor: k.rgb(252,197,51),
     },
     {
         tag: "player2",
@@ -53,6 +54,7 @@ const playersConfig = [
             right: "right",
         },
         headSprite: "hat1",
+        playerColor: k.rgb(55, 217, 140),
     },
     {
         tag: "player3",
@@ -63,6 +65,7 @@ const playersConfig = [
             left: "j",
             right: "l",
         },
+        playerColor: k.rgb(145, 121, 255), 
     },
     {
         tag: "player4",
@@ -73,6 +76,7 @@ const playersConfig = [
             left: "f",
             right: "h",
         },
+        playerColor: k.rgb(252,132,140), 
     },
 ];
 
@@ -172,8 +176,9 @@ k.scene("game", () => {
             k.z(10),
             k.anchor("bot"), 
             k.body(),
+            { playerColor: player.playerColor },
             player.tag,
-            "player_entity"
+             "player_entity" 
         ];
     });
 
@@ -211,7 +216,7 @@ k.scene("game", () => {
     });
 
 
-    players.forEach(player => { // Changed back to player instead of destructuring for clarity
+    players.forEach(player => { 
         const { instance, config } = player;
         k.onKeyPress(config.keybinds.jump, () => {
             const isCurrentlyGrounded = instance.isGrounded();
@@ -244,6 +249,14 @@ k.scene("game", () => {
         //     }
         // });
 
+    });
+
+    k.onCollide("player_entity", "*", (playerObj, other) => {
+        if (!other.is("player_entity")) {
+            if (playerObj.playerColor) {
+                other.color = playerObj.playerColor;
+            }
+        }
     });
 
     k.onUpdate(() => {
