@@ -22,6 +22,7 @@ k.loadSprite("hat1", "sprites/hat1.png");
 k.loadSprite("bounce", "sprites/tramp.png");
 k.loadSprite("bridge", "sprites/bridge.png");
 k.loadSprite("bridge_arc", "sprites/bridge_arc.png");
+k.loadSprite("key", "sprites/key.png");
 
 
 
@@ -46,7 +47,8 @@ const playersConfig = [
             right: "d",
         },
         headSprite: "hat",
-        playerColor: k.rgb(252,197,51),
+        playerColor: k.rgb(252, 197, 51),
+        hasKey: false,
     },
     {
         tag: "player2",
@@ -59,6 +61,7 @@ const playersConfig = [
         },
         headSprite: "hat1",
         playerColor: k.rgb(55, 217, 140),
+        hasKey: false,
     },
     {
         tag: "player3",
@@ -69,7 +72,8 @@ const playersConfig = [
             left: "j",
             right: "l",
         },
-        playerColor: k.rgb(145, 121, 255), 
+        playerColor: k.rgb(145, 121, 255),
+        hasKey: false,
     },
     {
         tag: "player4",
@@ -80,7 +84,8 @@ const playersConfig = [
             left: "f",
             right: "h",
         },
-        playerColor: k.rgb(252,132,140), 
+        playerColor: k.rgb(252, 132, 140),
+        hasKey: false,
     },
 ];
 
@@ -88,7 +93,7 @@ const levelLayout = [
     "b    %                &  b",
     "b   ===              === b",
     "b   @           $        b",
-    "b                        b",
+    "b            K           b",
     "b                        b",
     "b           ====         b",
     "b                        b",
@@ -127,26 +132,33 @@ k.scene("game", () => {
             k.sprite("fort"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0)
         ],
         "B": () => [
-           k.sprite("bounce"), k.anchor("bot"), k.area({
-            shape: new k.Rect(k.vec2(0), LEVEL_TILE_WIDTH, 70)
-           }), k.body({ isStatic: true }), k.z(0),
+            k.sprite("bounce"), k.anchor("bot"), k.area({
+                shape: new k.Rect(k.vec2(0), LEVEL_TILE_WIDTH, 70)
+            }), k.body({ isStatic: true }), k.z(0),
             "bouncing_block",
         ],
         "-": () => [
-           k.sprite("bridge"), k.anchor("bot"), k.area({
-            shape: new k.Rect(k.vec2(0, -90), LEVEL_TILE_WIDTH, 60)
-           }), k.body({ isStatic: true }), k.z(0),
+            k.sprite("bridge"), k.anchor("bot"), k.area({
+                shape: new k.Rect(k.vec2(0, -90), LEVEL_TILE_WIDTH, 60)
+            }), k.body({ isStatic: true }), k.z(0),
         ],
         "n": () => [
-           k.sprite("bridge_arc"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
+            k.sprite("bridge_arc"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
+        ],
+        "K": () => [
+            k.sprite("key", { width: 50, height: 50 }),
+            k.area(),
+            k.body({ isStatic: false }),
+            k.z(30),
+            "key_item", // Tag for the key
         ],
         "/": () => [
-            k.sprite("slope", {flipX: true}),
+            k.sprite("slope", { flipX: true }),
             k.area({
-               shape: new k.Polygon([
+                shape: new k.Polygon([
                     k.vec2(0 - LEVEL_TILE_WIDTH / 2, 0),
-                    k.vec2(LEVEL_TILE_WIDTH /2, 0),
-                    k.vec2(LEVEL_TILE_WIDTH / 2, -LEVEL_TILE_HEIGHT) 
+                    k.vec2(LEVEL_TILE_WIDTH / 2, 0),
+                    k.vec2(LEVEL_TILE_WIDTH / 2, -LEVEL_TILE_HEIGHT)
                 ]),
             }),
             k.anchor("bot"),
@@ -155,18 +167,18 @@ k.scene("game", () => {
             "slope_tile",
         ],
         "\\": () => [
-            k.sprite("slope"), 
+            k.sprite("slope"),
             k.area({
                 shape: new k.Polygon([
-                    k.vec2(0  - LEVEL_TILE_WIDTH / 2, 0),
-                    k.vec2( 0 + LEVEL_TILE_WIDTH / 2, 0),
-                    k.vec2(0 - (LEVEL_TILE_WIDTH / 2), -LEVEL_TILE_HEIGHT - 7) 
+                    k.vec2(0 - LEVEL_TILE_WIDTH / 2, 0),
+                    k.vec2(0 + LEVEL_TILE_WIDTH / 2, 0),
+                    k.vec2(0 - (LEVEL_TILE_WIDTH / 2), -LEVEL_TILE_HEIGHT - 7)
                 ]),
             }),
-            k.anchor("bot"), 
+            k.anchor("bot"),
             k.body({ isStatic: true }),
             k.z(0),
-            "slope_tile_right", 
+            "slope_tile_right",
         ],
         "f": () => [
             k.sprite("fence"), k.anchor("bot"), k.body({ isStatic: true }), k.z(0)
@@ -194,11 +206,11 @@ k.scene("game", () => {
                 ]),
             }),
             k.z(10),
-            k.anchor("bot"), 
+            k.anchor("bot"),
             k.body(),
             { playerColor: player.playerColor },
             player.tag,
-             "player_entity" 
+            "player_entity"
         ];
     });
 
@@ -226,9 +238,9 @@ k.scene("game", () => {
 
             if (playerConfig.headSprite) {
                 playerInstance.add([
-                    k.sprite(playerConfig.headSprite, { width: HAT_WIDTH }), 
-                    k.pos(0, -BEAN_HEIGHT + 35 ),
-                    k.anchor("bot"), 
+                    k.sprite(playerConfig.headSprite, { width: HAT_WIDTH }),
+                    k.pos(0, -BEAN_HEIGHT + 35),
+                    k.anchor("bot"),
                     "hat",
                 ]);
             }
@@ -236,7 +248,7 @@ k.scene("game", () => {
     });
 
 
-    players.forEach(player => { 
+    players.forEach(player => {
         const { instance, config } = player;
         k.onKeyPress(config.keybinds.jump, () => {
             const isCurrentlyGrounded = instance.isGrounded();
@@ -282,10 +294,26 @@ k.scene("game", () => {
     k.onCollide("player_entity", "bouncing_block", (playerObj, block, collision) => {
         if (!collision.isTop()) {
             // if (playerObj.vel.y > 0) { 
-                playerObj.jump(BOUNCE_FORCE);
-                playerObj.jumpsUsed = 0;
-                playerObj.coyoteTimer = 0; 
+            playerObj.jump(BOUNCE_FORCE);
+            playerObj.jumpsUsed = 0;
+            playerObj.coyoteTimer = 0;
             // }
+        }
+    });
+
+    k.onCollide("player_entity", "key_item", (playerObj, keyItem) => {
+        if (!playerObj.hasKey) {
+            playerObj.hasKey = true;
+            keyItem.destroy(); 
+            
+            const keyIcon = playerObj.add([
+                k.sprite("key", { width: 50, height: 50 }), 
+                k.pos(0, -BEAN_HEIGHT - 40), 
+                k.anchor("bot"),
+                k.color(playerObj.playerColor), 
+                "key_icon", 
+            ]);
+            playerObj.keyIconInstance = keyIcon; 
         }
     });
 
