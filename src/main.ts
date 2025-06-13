@@ -25,6 +25,7 @@ k.loadSprite("bridge_arc", "sprites/bridge_arc.png");
 k.loadSprite("key", "sprites/key.png");
 k.loadSprite("chest", "sprites/chest.png");
 k.loadSprite("gun1", "sprites/gun1.png");
+k.loadSprite("gun2", "sprites/gun2.png");
 
 
 
@@ -37,7 +38,36 @@ const FRICTION_GROUND = 1000;
 
 const BOUNCE_FORCE = 1700;
 const PLAYER_COLLISION_PUSH_FORCE = 600;
+const RECOIL_FORCE = 200;
 
+const GUN_X_OFFSET = 70;
+const GUN_Y_OFFSET = 70;
+
+
+// Gun Stats Definitions
+const GUN_STATS = {
+    PISTOL: {
+        type: "pistol",
+        sprite: "gun1",
+        damage: 10,
+        range: 800,
+        fireRate: 0.8, 
+        bulletSpeed: 2000,
+        bulletCount: 1,
+        bulletColor: k.rgb(255, 255, 0),
+    },
+    SHOTGUN: {
+        type: "shotgun",
+        sprite: "gun2",
+        damage: 30,
+        range: 600, 
+        fireRate: 1, 
+        bulletSpeed: 2000,
+        bulletCount: 1,
+        bulletSpread: 1500,
+        bulletColor: k.rgb(255, 165, 0), 
+    }
+} as const;
 
 const playersConfig = [
     {
@@ -274,12 +304,22 @@ k.scene("game", () => {
             }
         });
 
-        k.onKeyDown(config.keybinds.left, () => {
+        k.onKeyPress(config.keybinds.left, () => {
+            const gun = instance.get("gun_icon")[0];
             instance.flipX = true;
+            if(gun){
+                gun.flipX = true
+                gun.pos.x = -GUN_X_OFFSET;
+            }
         });
 
-        k.onKeyDown(config.keybinds.right, () => {
+        k.onKeyPress(config.keybinds.right, () => {
+            const gun = instance.get("gun_icon")[0];
             instance.flipX = false;
+            if(gun){
+                gun.flipX = false
+                gun.pos.x = GUN_X_OFFSET;
+            }
         });
 
         // might need later
@@ -292,12 +332,39 @@ k.scene("game", () => {
     });
 
     k.onCollide("player_entity", "*", (playerObj, other) => {
-        if (!other.is("player_entity") && !other.is("chest_block")) {
+        if (!other.is("player_entity") && !other.is("chest_block") && !other.is("bullet_obj")) {
             if (playerObj.playerColor) {
                 other.color = playerObj.playerColor;
             }
         }
     });
+
+    function spawnBullet(shooter, gunStats, directionAngle) {
+        const bulletVel = k.vec2(
+            gunStats.bulletSpeed * Math.cos(directionAngle),
+            gunStats.bulletSpeed * Math.sin(directionAngle)
+        );
+
+        const bulletLifespan = gunStats.range / gunStats.bulletSpeed;
+
+        const bul = k.add([
+            k.circle(20), 
+            k.pos(directionAngle == 0? shooter.pos.x + (BEAN_WIDTH): shooter.pos.x -(BEAN_WIDTH ), shooter.pos.y - BEAN_HEIGHT / 2),
+            k.color(shooter.playerColor),
+            k.area(),
+            k.body({ isStatic: false, gravityScale: 0 }),
+            k.lifespan(bulletLifespan),
+            k.opacity(1),
+            {
+                damage: gunStats.damage,
+                shooterId: shooter.tag,
+            },
+            "bullet_obj",
+        ]);
+
+        bul.applyImpulse(bulletVel);
+
+    }
 
 
     k.onCollide("player_entity", "player_entity", (p1, p2) => {
@@ -349,6 +416,35 @@ k.scene("game", () => {
         }
     });
 
+    k.onCollide("player_entity", "gun_item", (playerObj, gunItem) => {
+        const playerGameState = players.find(p => p.instance === playerObj);
+
+        if (playerGameState) {
+            if (playerGameState.gunIconInstance) {
+                playerGameState.gunIconInstance.destroy();
+                playerGameState.gunIconInstance = null;
+            }
+
+            playerGameState.currentGun = gunItem.gunType;
+            gunItem.destroy();
+
+            const initialGunXOffset = playerObj.flipX ? -GUN_X_OFFSET : GUN_X_OFFSET;
+
+            const gunIcon = playerObj.add([
+                k.sprite(playerGameState.currentGun.sprite, {
+                    height: 60,
+                    flipX: playerObj.flipX
+                }),
+                k.pos(initialGunXOffset, -GUN_Y_OFFSET),
+                k.anchor("center"),
+                k.color(playerObj.playerColor),
+                "gun_icon", 
+            ]);
+            playerGameState.gunIconInstance = gunIcon;
+            playerGameState.lastShotTime = k.time();
+        }
+    });
+
     k.onCollide("player_entity", "chest_block", (playerObj, other) => {
         if(playerObj.hasKey){
             other.destroy();
@@ -388,7 +484,6 @@ k.scene("game", () => {
             const { instance, config } = player;
             const dt = k.dt();
             const isCurrentlyGrounded = instance.isGrounded();
-
 
             let desiredXVel = 0;
             if (k.isKeyDown(config.keybinds.left)) {
@@ -447,6 +542,24 @@ k.scene("game", () => {
                 }
             }
 
+            if (player.currentGun) {
+                const now = k.time();
+                if (now - player.lastShotTime >= player.currentGun.fireRate) {
+                    player.lastShotTime = now;
+
+                    const baseAngle = instance.flipX ? Math.PI : 0;
+
+                    for (let i = 0; i < player.currentGun.bulletCount; i++) {
+                        let spreadAngle = 0;
+                        if (player.currentGun.bulletCount > 1) {
+                            spreadAngle = k.map(i, 0, player.currentGun.bulletCount - 1, -player.currentGun.bulletSpread / 2, player.currentGun.bulletSpread / 2);
+                        }
+                        spawnBullet(instance, player.currentGun, baseAngle + spreadAngle);
+                    }
+
+                }
+            }
+
             const p = instance.pos;
             minX = Math.min(minX, p.x);
             maxX = Math.max(maxX, p.x);
@@ -483,14 +596,15 @@ k.go("game");
 
 
 function dropGun(x: number, y: number) {
+    const gunr = k.randi()? GUN_STATS.PISTOL: GUN_STATS.SHOTGUN;
     k.add([
-        k.sprite("gun1", { width: 70, height: 70 }),
+        k.sprite(gunr.sprite, { height: 70 }),
         k.pos(k.vec2(x, y - 75)),
         k.area(),
         k.body({ isStatic: false }),
         k.z(30),
         k.animate(),
-        "gun1",
-
+        { gunType: gunr},
+        "gun_item",
     ])
 }
