@@ -26,6 +26,7 @@ k.loadSprite("key", "sprites/key.png");
 k.loadSprite("chest", "sprites/chest.png");
 k.loadSprite("gun1", "sprites/gun1.png");
 k.loadSprite("gun2", "sprites/gun2.png");
+k.loadSprite("bullet", "sprites/bullet.png");
 
 
 
@@ -348,13 +349,14 @@ k.scene("game", () => {
         const bulletLifespan = gunStats.range / gunStats.bulletSpeed;
 
         const bul = k.add([
-            k.circle(20), 
-            k.pos(directionAngle == 0? shooter.pos.x + (BEAN_WIDTH): shooter.pos.x -(BEAN_WIDTH ), shooter.pos.y - BEAN_HEIGHT / 2),
+            k.sprite("bullet"),
+            k.pos(directionAngle == 0? shooter.pos.x + (BEAN_WIDTH): shooter.pos.x -(BEAN_WIDTH ), shooter.pos.y - 90),
             k.color(shooter.playerColor),
             k.area(),
             k.body({ isStatic: false, gravityScale: 0 }),
             k.lifespan(bulletLifespan),
             k.opacity(1),
+            k.z(5),
             {
                 damage: gunStats.damage,
                 shooterId: shooter.tag,
