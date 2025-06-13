@@ -34,6 +34,7 @@ const MAX_HORZ_SPEED = SPEED;
 const FRICTION_GROUND = 1000;
 
 const BOUNCE_FORCE = 1700;
+const PLAYER_COLLISION_PUSH_FORCE = 600;
 
 
 const playersConfig = [
@@ -288,6 +289,46 @@ k.scene("game", () => {
             if (playerObj.playerColor) {
                 other.color = playerObj.playerColor;
             }
+        }
+    });
+
+
+    k.onCollide("player_entity", "player_entity", (p1, p2) => {
+        if (p1 === p2) return;
+        const relativeVelocity = p1.vel.sub(p2.vel);
+
+        const collisionSpeed = relativeVelocity.len(); 
+
+        console.log(`Collision Speed: ${collisionSpeed.toFixed(2)}`);
+
+        const minSpeedForImpulse = 10;
+
+        let calculatedStrength = 0;
+        calculatedStrength = k.map(collisionSpeed, minSpeedForImpulse, 500, 50, PLAYER_COLLISION_PUSH_FORCE);
+        calculatedStrength = Math.min(calculatedStrength, PLAYER_COLLISION_PUSH_FORCE); 
+
+        console.log(`Calculated Strength: ${calculatedStrength.toFixed(2)}`);
+
+        if (calculatedStrength > 0) {
+            if(calculatedStrength < 300) calculatedStrength = 300;
+            const dirAAway = p1.pos.sub(p2.pos).unit();
+            const impulseA = dirAAway.scale(calculatedStrength);
+            const dirBAway = p2.pos.sub(p1.pos).unit();
+            const impulseB = dirBAway.scale(calculatedStrength);
+
+            p1.vel.x = 0;
+            p1.vel.y = 0;
+            p2.vel.y = 0;
+            p2.vel.y = 0;
+
+
+            p1.applyImpulse(impulseA);
+            p2.applyImpulse(impulseB);
+
+            console.log(`Impulse Applied to ${p1.id}: x=${impulseA.x.toFixed(2)}, y=${impulseA.y.toFixed(2)}`);
+            console.log(`Impulse Applied to ${p2.id}: x=${impulseB.x.toFixed(2)}, y=${impulseB.y.toFixed(2)}`);
+        } else {
+            console.log("Collision too slow, no impulse applied.");
         }
     });
 
