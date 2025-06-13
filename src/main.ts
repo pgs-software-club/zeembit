@@ -23,6 +23,8 @@ k.loadSprite("bounce", "sprites/tramp.png");
 k.loadSprite("bridge", "sprites/bridge.png");
 k.loadSprite("bridge_arc", "sprites/bridge_arc.png");
 k.loadSprite("key", "sprites/key.png");
+k.loadSprite("chest", "sprites/chest.png");
+k.loadSprite("gun1", "sprites/gun1.png");
 
 
 
@@ -101,7 +103,7 @@ const levelLayout = [
     "b                        b",
     "b     ==  w              b",
     "bB        o              b",
-    "b=g==\\    afffff         b",
+    "b=g==\\    afffff    C    b",
     "======g==b=-nnn-==gg======",
 ];
 
@@ -132,6 +134,10 @@ k.scene("game", () => {
         "o": () => [
             k.sprite("fort"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0)
         ],
+        "C": () => [
+            k.sprite("chest"), k.color(k.	rgb(229, 170, 112)), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
+            "chest_block"
+        ],
         "B": () => [
             k.sprite("bounce"), k.anchor("bot"), k.area({
                 shape: new k.Rect(k.vec2(0), LEVEL_TILE_WIDTH, 70)
@@ -151,7 +157,8 @@ k.scene("game", () => {
             k.area(),
             k.body({ isStatic: false }),
             k.z(30),
-            "key_item", // Tag for the key
+            k.animate(),
+            "key_item", 
         ],
         "/": () => [
             k.sprite("slope", { flipX: true }),
@@ -285,7 +292,7 @@ k.scene("game", () => {
     });
 
     k.onCollide("player_entity", "*", (playerObj, other) => {
-        if (!other.is("player_entity")) {
+        if (!other.is("player_entity") && !other.is("chest_block")) {
             if (playerObj.playerColor) {
                 other.color = playerObj.playerColor;
             }
@@ -339,6 +346,16 @@ k.scene("game", () => {
             playerObj.jumpsUsed = 0;
             playerObj.coyoteTimer = 0;
             // }
+        }
+    });
+
+    k.onCollide("player_entity", "chest_block", (playerObj, other) => {
+        if(playerObj.hasKey){
+            other.destroy();
+            const key = playerObj.get("key_icon")[0];
+            playerObj.remove(key);
+            playerObj.hasKey = false;
+            dropGun(other.pos.x, other.pos.y)
         }
     });
 
@@ -463,3 +480,17 @@ k.scene("game", () => {
 
 
 k.go("game");
+
+
+function dropGun(x: number, y: number) {
+    k.add([
+        k.sprite("gun1", { width: 70, height: 70 }),
+        k.pos(k.vec2(x, y - 75)),
+        k.area(),
+        k.body({ isStatic: false }),
+        k.z(30),
+        k.animate(),
+        "gun1",
+
+    ])
+}
