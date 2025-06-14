@@ -83,6 +83,7 @@ const playersConfig = [
         headSprite: "hat",
         playerColor: k.rgb(252, 197, 51),
         hasKey: false,
+        health: 100,
     },
     {
         tag: "player2",
@@ -96,6 +97,7 @@ const playersConfig = [
         headSprite: "hat1",
         playerColor: k.rgb(55, 217, 140),
         hasKey: false,
+        health: 100,
     },
     {
         tag: "player3",
@@ -108,6 +110,7 @@ const playersConfig = [
         },
         playerColor: k.rgb(145, 121, 255),
         hasKey: false,
+        health: 100,
     },
     {
         tag: "player4",
@@ -120,6 +123,7 @@ const playersConfig = [
         },
         playerColor: k.rgb(252, 132, 140),
         hasKey: false,
+        health: 100,
     },
 ];
 
@@ -155,15 +159,19 @@ k.scene("game", () => {
     const tilesConfig = {
         "=": () => [
             k.sprite("ground"), k.anchor("bot"), k.area(), k.body({ isStatic: true }),
+            "colorable",
         ],
         "g": () => [
             k.sprite("ground1"), k.anchor("bot"), k.area(), k.body({ isStatic: true }),
+            "colorable",
         ],
         "b": () => [
-            k.sprite("brick"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0)
+            k.sprite("brick"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
+            "colorable",
         ],
         "o": () => [
-            k.sprite("fort"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0)
+            k.sprite("fort"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
+            "colorable",
         ],
         "C": () => [
             k.sprite("chest"), k.color(k.	rgb(229, 170, 112)), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
@@ -173,15 +181,18 @@ k.scene("game", () => {
             k.sprite("bounce"), k.anchor("bot"), k.area({
                 shape: new k.Rect(k.vec2(0), LEVEL_TILE_WIDTH, 70)
             }), k.body({ isStatic: true }), k.z(0),
+            "colorable",
             "bouncing_block",
         ],
         "-": () => [
             k.sprite("bridge"), k.anchor("bot"), k.area({
                 shape: new k.Rect(k.vec2(0, -90), LEVEL_TILE_WIDTH, 60)
             }), k.body({ isStatic: true }), k.z(0),
+            "colorable",
         ],
         "n": () => [
             k.sprite("bridge_arc"), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
+            "colorable",
         ],
         "K": () => [
             k.sprite("key", { width: 50, height: 50 }),
@@ -189,6 +200,7 @@ k.scene("game", () => {
             k.body({ isStatic: false }),
             k.z(30),
             k.animate(),
+            "colorable",
             "key_item", 
         ],
         "/": () => [
@@ -203,6 +215,7 @@ k.scene("game", () => {
             k.anchor("bot"),
             k.body({ isStatic: true }),
             k.z(0),
+            "colorable",
             "slope_tile",
         ],
         "\\": () => [
@@ -217,6 +230,7 @@ k.scene("game", () => {
             k.anchor("bot"),
             k.body({ isStatic: true }),
             k.z(0),
+            "colorable",
             "slope_tile_right",
         ],
         "f": () => [
@@ -247,7 +261,7 @@ k.scene("game", () => {
             k.z(10),
             k.anchor("bot"),
             k.body(),
-            { playerColor: player.playerColor },
+            { playerColor: player.playerColor, health: player.health },
             player.tag,
             "player_entity"
         ];
@@ -285,6 +299,34 @@ k.scene("game", () => {
             }
         }
     });
+
+    const resetPlayer = (playerState) => {
+        const new_pos = k.vec2(k.rand(k.width() * 2), -(k.height() - k.rand(500, 700)));
+        k.debug.log(new_pos)
+        playerState.pos.x = new_pos.x;
+        playerState.pos.y = new_pos.y;
+        playerState.vel.x = 0;
+        playerState.vel.y = 0;
+
+        if (playerState.keyIconInstance) {
+            playerState.keyIconInstance.destroy();
+            playerState.keyIconInstance = null;
+            playerState.hasKey = false;
+        }
+        if (playerState.gunIconInstance) {
+            playerState.gunIconInstance.destroy();
+            playerState.gunIconInstance = null;
+            playerState.currentGun = null;
+        }
+
+        playerState.health = 100;
+
+        playerState.jumpsUsed = 0;
+        playerState.coyoteTimer = 0;
+        playerState.jumpBuffered = false;
+        playerState.jumpBufferTimer = 0;
+        playerState.lastShotTime = 0;
+    };
 
 
     players.forEach(player => {
@@ -339,6 +381,22 @@ k.scene("game", () => {
             }
         }
     });
+
+    k.onCollide("bullet_obj", "colorable", (bullet, blockHit) => {
+        blockHit.color = bullet.color;
+        bullet.destroy();
+    })
+
+    k.onCollide("bullet_obj", "player_entity", (bullet, player) => {
+        k.debug.log(player.health ,bullet.damage)
+        player.health -= bullet.damage;
+        if(player.health <= 0){
+            player.health = 0;
+            resetPlayer(player);
+        } 
+
+        bullet.destroy();
+    })
 
     function spawnBullet(shooter, gunStats, directionAngle) {
         const bulletVel = k.vec2(
@@ -450,8 +508,7 @@ k.scene("game", () => {
     k.onCollide("player_entity", "chest_block", (playerObj, other) => {
         if(playerObj.hasKey){
             other.destroy();
-            const key = playerObj.get("key_icon")[0];
-            playerObj.remove(key);
+            playerObj.keyIconInstance.destroy();
             playerObj.hasKey = false;
             dropGun(other.pos.x, other.pos.y)
         }
