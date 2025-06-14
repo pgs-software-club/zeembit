@@ -28,8 +28,6 @@ k.loadSprite("gun1", "sprites/gun1.png");
 k.loadSprite("gun2", "sprites/gun2.png");
 k.loadSprite("bullet", "sprites/bullet.png");
 
-
-
 k.setBackground(237, 237, 237);
 
 const COYOTE_TIME = 0.1;
@@ -39,10 +37,11 @@ const FRICTION_GROUND = 1000;
 
 const BOUNCE_FORCE = 1700;
 const PLAYER_COLLISION_PUSH_FORCE = 600;
-const RECOIL_FORCE = 200;
 
 const GUN_X_OFFSET = 70;
 const GUN_Y_OFFSET = 70;
+
+const MAX_GUN_HOLD_TIME = 30; // seconds
 
 
 // Gun Stats Definitions
@@ -83,7 +82,7 @@ const playersConfig = [
         headSprite: "hat",
         playerColor: k.rgb(252, 197, 51),
         hasKey: false,
-        health: 100,
+        health: 50,
     },
     {
         tag: "player2",
@@ -97,7 +96,7 @@ const playersConfig = [
         headSprite: "hat1",
         playerColor: k.rgb(55, 217, 140),
         hasKey: false,
-        health: 100,
+        health: 50,
     },
     {
         tag: "player3",
@@ -110,7 +109,7 @@ const playersConfig = [
         },
         playerColor: k.rgb(145, 121, 255),
         hasKey: false,
-        health: 100,
+        health: 50,
     },
     {
         tag: "player4",
@@ -123,7 +122,7 @@ const playersConfig = [
         },
         playerColor: k.rgb(252, 132, 140),
         hasKey: false,
-        health: 100,
+        health: 50,
     },
 ];
 
@@ -319,7 +318,7 @@ k.scene("game", () => {
             playerState.currentGun = null;
         }
 
-        playerState.health = 100;
+        playerState.health = 50;
 
         playerState.jumpsUsed = 0;
         playerState.coyoteTimer = 0;
@@ -486,6 +485,7 @@ k.scene("game", () => {
             }
 
             playerGameState.currentGun = gunItem.gunType;
+            playerGameState.gotGun = k.time();
             gunItem.destroy();
 
             const initialGunXOffset = playerObj.flipX ? -GUN_X_OFFSET : GUN_X_OFFSET;
@@ -603,6 +603,14 @@ k.scene("game", () => {
 
             if (player.currentGun) {
                 const now = k.time();
+                if(now - player.gotGun >= MAX_GUN_HOLD_TIME) {
+                    if (player.gunIconInstance) {
+                        player.gunIconInstance.destroy();
+                        player.gunIconInstance = null;
+                    }
+                    player.currentGun = null;
+                    return
+                }
                 if (now - player.lastShotTime >= player.currentGun.fireRate) {
                     player.lastShotTime = now;
 
@@ -642,7 +650,7 @@ k.scene("game", () => {
         let targetScale = Math.min(requiredScaleX, requiredScaleY);
 
         const minCamScale = 0.3;
-        const maxCamScale = 0.7;
+        const maxCamScale = 0.6;
 
         targetScale = Math.max(minCamScale, Math.min(maxCamScale, targetScale));
 
