@@ -28,6 +28,8 @@ k.loadSprite("gun1", "sprites/gun1.png");
 k.loadSprite("gun2", "sprites/gun2.png");
 k.loadSprite("bullet", "sprites/bullet.png");
 
+k.loadFont("retrofont", "fonts/union-soap.regular.ttf");
+
 k.setBackground(237, 237, 237);
 
 const COYOTE_TIME = 0.1;
@@ -51,7 +53,7 @@ const GUN_STATS = {
         sprite: "gun1",
         damage: 10,
         range: 800,
-        fireRate: 0.8, 
+        fireRate: 0.8,
         bulletSpeed: 2000,
         bulletCount: 1,
         bulletColor: k.rgb(255, 255, 0),
@@ -60,12 +62,12 @@ const GUN_STATS = {
         type: "shotgun",
         sprite: "gun2",
         damage: 30,
-        range: 600, 
-        fireRate: 1, 
+        range: 600,
+        fireRate: 1,
         bulletSpeed: 2000,
         bulletCount: 1,
         bulletSpread: 1500,
-        bulletColor: k.rgb(255, 165, 0), 
+        bulletColor: k.rgb(255, 165, 0),
     }
 } as const;
 
@@ -154,6 +156,8 @@ k.scene("game", () => {
     const BEAN_HEIGHT = 147;
     const HAT_WIDTH = 115;
 
+    let gameTimer = 30;
+
 
     const tilesConfig = {
         "=": () => [
@@ -173,7 +177,7 @@ k.scene("game", () => {
             "colorable",
         ],
         "C": () => [
-            k.sprite("chest"), k.color(k.	rgb(229, 170, 112)), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
+            k.sprite("chest"), k.color(k.rgb(229, 170, 112)), k.anchor("bot"), k.area(), k.body({ isStatic: true }), k.z(0),
             "chest_block"
         ],
         "B": () => [
@@ -200,7 +204,7 @@ k.scene("game", () => {
             k.z(30),
             k.animate(),
             "colorable",
-            "key_item", 
+            "key_item",
         ],
         "/": () => [
             k.sprite("slope", { flipX: true }),
@@ -299,6 +303,55 @@ k.scene("game", () => {
         }
     });
 
+    function setupUI() {
+        const timerTextSize = 69; 
+        const timerYPos = 0; 
+
+        const minUnitDisp = k.add([
+            k.text("0", { size: timerTextSize, font: "retrofont" }),
+            k.pos( timerTextSize * 0.5, timerYPos),
+            k.anchor("top"),
+            k.fixed(),
+            k.color(k.BLACK),
+            k.outline(4),
+            "game_timer_digit",
+        ]);
+
+        const colonDisp = k.add([
+            k.text(":", { size: timerTextSize, font: "retrofont" }),
+            k.pos(timerTextSize + timerTextSize * 0.2, timerYPos),
+            k.anchor("top"),
+            k.fixed(),
+            k.outline(4),
+            k.color(k.BLACK),
+            "game_timer_colon",
+        ]);
+
+        const secTensDisp = k.add([
+            k.text("0", { size: timerTextSize, font: "retrofont" }),
+            k.pos( timerTextSize + timerTextSize * 0.9, timerYPos),
+            k.anchor("top"),
+            k.fixed(),
+            k.outline(4),
+            k.color(k.BLACK),
+            "game_timer_digit",
+        ]);
+
+        const secUnitDisp = k.add([
+            k.text("0", { size: timerTextSize, font: "retrofont" }),
+            k.pos( timerTextSize + timerTextSize * 1.6, timerYPos),
+            k.anchor("top"),
+            k.fixed(),
+            k.outline(4),
+            k.color(k.BLACK),
+            "game_timer_digit",
+        ]);
+
+        return { minUnitDisp, colonDisp, secTensDisp, secUnitDisp };
+    }
+
+    const uiElements = setupUI(); 
+
     const resetPlayer = (playerState) => {
         const new_pos = k.vec2(k.rand(k.width() * 2), -(k.height() - k.rand(500, 700)));
         k.debug.log(new_pos)
@@ -349,7 +402,7 @@ k.scene("game", () => {
         k.onKeyPress(config.keybinds.left, () => {
             const gun = instance.get("gun_icon")[0];
             instance.flipX = true;
-            if(gun){
+            if (gun) {
                 gun.flipX = true
                 gun.pos.x = -GUN_X_OFFSET;
             }
@@ -358,7 +411,7 @@ k.scene("game", () => {
         k.onKeyPress(config.keybinds.right, () => {
             const gun = instance.get("gun_icon")[0];
             instance.flipX = false;
-            if(gun){
+            if (gun) {
                 gun.flipX = false
                 gun.pos.x = GUN_X_OFFSET;
             }
@@ -387,12 +440,12 @@ k.scene("game", () => {
     })
 
     k.onCollide("bullet_obj", "player_entity", (bullet, player) => {
-        k.debug.log(player.health ,bullet.damage)
+        k.debug.log(player.health, bullet.damage)
         player.health -= bullet.damage;
-        if(player.health <= 0){
+        if (player.health <= 0) {
             player.health = 0;
             resetPlayer(player);
-        } 
+        }
 
         bullet.destroy();
     })
@@ -407,7 +460,7 @@ k.scene("game", () => {
 
         const bul = k.add([
             k.sprite("bullet"),
-            k.pos(directionAngle == 0? shooter.pos.x + (BEAN_WIDTH): shooter.pos.x -(BEAN_WIDTH ), shooter.pos.y - 90),
+            k.pos(directionAngle == 0 ? shooter.pos.x + (BEAN_WIDTH) : shooter.pos.x - (BEAN_WIDTH), shooter.pos.y - 90),
             k.color(shooter.playerColor),
             k.area(),
             k.body({ isStatic: false, gravityScale: 0 }),
@@ -430,7 +483,7 @@ k.scene("game", () => {
         if (p1 === p2) return;
         const relativeVelocity = p1.vel.sub(p2.vel);
 
-        const collisionSpeed = relativeVelocity.len(); 
+        const collisionSpeed = relativeVelocity.len();
 
         console.log(`Collision Speed: ${collisionSpeed.toFixed(2)}`);
 
@@ -438,12 +491,12 @@ k.scene("game", () => {
 
         let calculatedStrength = 0;
         calculatedStrength = k.map(collisionSpeed, minSpeedForImpulse, 500, 50, PLAYER_COLLISION_PUSH_FORCE);
-        calculatedStrength = Math.min(calculatedStrength, PLAYER_COLLISION_PUSH_FORCE); 
+        calculatedStrength = Math.min(calculatedStrength, PLAYER_COLLISION_PUSH_FORCE);
 
         console.log(`Calculated Strength: ${calculatedStrength.toFixed(2)}`);
 
         if (calculatedStrength > 0) {
-            if(calculatedStrength < 300) calculatedStrength = 300;
+            if (calculatedStrength < 300) calculatedStrength = 300;
             const dirAAway = p1.pos.sub(p2.pos).unit();
             const impulseA = dirAAway.scale(calculatedStrength);
             const dirBAway = p2.pos.sub(p1.pos).unit();
@@ -467,11 +520,9 @@ k.scene("game", () => {
 
     k.onCollide("player_entity", "bouncing_block", (playerObj, block, collision) => {
         if (!collision.isTop()) {
-            // if (playerObj.vel.y > 0) { 
             playerObj.jump(BOUNCE_FORCE);
             playerObj.jumpsUsed = 0;
             playerObj.coyoteTimer = 0;
-            // }
         }
     });
 
@@ -498,7 +549,7 @@ k.scene("game", () => {
                 k.pos(initialGunXOffset, -GUN_Y_OFFSET),
                 k.anchor("center"),
                 k.color(playerObj.playerColor),
-                "gun_icon", 
+                "gun_icon",
             ]);
             playerGameState.gunIconInstance = gunIcon;
             playerGameState.lastShotTime = k.time();
@@ -506,7 +557,7 @@ k.scene("game", () => {
     });
 
     k.onCollide("player_entity", "chest_block", (playerObj, other) => {
-        if(playerObj.hasKey){
+        if (playerObj.hasKey) {
             other.destroy();
             playerObj.keyIconInstance.destroy();
             playerObj.hasKey = false;
@@ -517,16 +568,16 @@ k.scene("game", () => {
     k.onCollide("player_entity", "key_item", (playerObj, keyItem) => {
         if (!playerObj.hasKey) {
             playerObj.hasKey = true;
-            keyItem.destroy(); 
-            
+            keyItem.destroy();
+
             const keyIcon = playerObj.add([
-                k.sprite("key", { width: 50, height: 50 }), 
-                k.pos(0, -BEAN_HEIGHT - 40), 
+                k.sprite("key", { width: 50, height: 50 }),
+                k.pos(0, -BEAN_HEIGHT - 40),
                 k.anchor("bot"),
-                k.color(playerObj.playerColor), 
-                "key_icon", 
+                k.color(playerObj.playerColor),
+                "key_icon",
             ]);
-            playerObj.keyIconInstance = keyIcon; 
+            playerObj.keyIconInstance = keyIcon;
         }
     });
 
@@ -603,7 +654,7 @@ k.scene("game", () => {
 
             if (player.currentGun) {
                 const now = k.time();
-                if(now - player.gotGun >= MAX_GUN_HOLD_TIME) {
+                if (now - player.gotGun >= MAX_GUN_HOLD_TIME) {
                     if (player.gunIconInstance) {
                         player.gunIconInstance.destroy();
                         player.gunIconInstance = null;
@@ -655,7 +706,46 @@ k.scene("game", () => {
         targetScale = Math.max(minCamScale, Math.min(maxCamScale, targetScale));
 
         k.setCamScale(targetScale, targetScale);
+
+
+
+
+        gameTimer -= k.dt();
+        gameTimer = Math.max(0, gameTimer);
+    
+        const minutes = Math.floor(gameTimer / 60);
+        const seconds = Math.floor(gameTimer % 60);
+    
+        const secTens = Math.floor(seconds / 10);
+        const secUnits = seconds % 10;
+    
+        uiElements.minUnitDisp.text = `${minutes % 10}`;
+        uiElements.secTensDisp.text = `${secTens}`;
+        uiElements.secUnitDisp.text = `${secUnits}`;
+    
+        const timerColor = gameTimer <= 10 ? k.RED : k.BLACK;
+        uiElements.minUnitDisp.color = timerColor;
+        uiElements.colonDisp.color = timerColor;
+        uiElements.secTensDisp.color = timerColor;
+        uiElements.secUnitDisp.color = timerColor;
+    
+    
+        if (gameTimer <= 0) {
+            k.add([
+                k.text("GAME OVER!", { size: 64, font: "retrofont" }),
+                k.pos(k.width() / 2, k.height() / 2),
+                k.fixed(),
+                k.opacity(1),
+                k.color(k.RED),
+                k.lifespan(1),
+                k.anchor("center"),
+                "game_over_text"
+            ]);
+        }
     });
+
+
+
 });
 
 
@@ -663,7 +753,7 @@ k.go("game");
 
 
 function dropGun(x: number, y: number) {
-    const gunr = k.randi()? GUN_STATS.PISTOL: GUN_STATS.SHOTGUN;
+    const gunr = k.randi() ? GUN_STATS.PISTOL : GUN_STATS.SHOTGUN;
     k.add([
         k.sprite(gunr.sprite, { height: 70 }),
         k.pos(k.vec2(x, y - 75)),
@@ -671,7 +761,7 @@ function dropGun(x: number, y: number) {
         k.body({ isStatic: false }),
         k.z(30),
         k.animate(),
-        { gunType: gunr},
+        { gunType: gunr },
         "gun_item",
     ])
 }
