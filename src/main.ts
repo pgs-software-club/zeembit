@@ -138,6 +138,13 @@ const playersConfig = [
     },
 ];
 
+let blocksColored = {
+    Red: 0,
+    Blue: 0,
+    Green: 0,
+    Yellow: 0,
+}
+
 const levelLayout = [
     "b    %                &  b",
     "b   ===              === b",
@@ -168,7 +175,7 @@ k.scene("game", () => {
 
     let gameTimer = 5;
 
-    let blocksColored = {
+    blocksColored = {
         Red: 0,
         Blue: 0,
         Green: 0,
@@ -439,13 +446,6 @@ k.scene("game", () => {
             }
         });
 
-        // might need later
-        // k.onKeyRelease(config.keybinds.left, () => {
-        //     if (!k.isKeyDown(config.keybinds.right)) {
-        //         instance.flipX = false;
-        //     }
-        // });
-
     });
 
     k.onCollide("player_entity", "*", (playerObj, other) => {
@@ -463,41 +463,6 @@ k.scene("game", () => {
         blockHit.color = bullet.color;
         bullet.destroy();
     });
-
-    function updateBlockColor(prev, newColor){
-        if(prev == newColor) return;
-        switch (prev) {
-            case COLOR_RED:
-                blocksColored.Red -= 1
-                break;
-            case COLOR_BLUE:
-                blocksColored.Blue -= 1
-                break;
-            case COLOR_YELLOW:
-                blocksColored.Yellow -= 1
-                break;
-            case COLOR_GREEN:
-                blocksColored.Green -= 1
-                break;
-        }
-
-        switch (newColor) {
-            case COLOR_RED:
-                blocksColored.Red += 1
-                break;
-            case COLOR_BLUE:
-                blocksColored.Blue += 1
-                break;
-            case COLOR_YELLOW:
-                blocksColored.Yellow += 1
-                break;
-            case COLOR_GREEN:
-                blocksColored.Green += 1
-                break;
-        }
-
-        log(JSON.stringify(blocksColored))
-    }
 
     k.onCollide("bullet_obj", "player_entity", (bullet, player) => {
         k.debug.log(player.health, bullet.damage)
@@ -822,9 +787,6 @@ k.scene("game", () => {
         }
 
     });
-
-
-
 });
 
 
@@ -844,3 +806,38 @@ function dropGun(x: number, y: number) {
         "gun_item",
     ])
 }
+
+function updateBlockColor(prev, newColor){
+        if(prev == newColor) return;
+        switch (prev) {
+            case COLOR_RED:
+                blocksColored.Red -= 1
+                break;
+            case COLOR_BLUE:
+                blocksColored.Blue -= 1
+                break;
+            case COLOR_YELLOW:
+                blocksColored.Yellow -= 1
+                break;
+            case COLOR_GREEN:
+                blocksColored.Green -= 1
+                break;
+        }
+
+        switch (newColor) {
+            case COLOR_RED:
+                blocksColored.Red += 1
+                break;
+            case COLOR_BLUE:
+                blocksColored.Blue += 1
+                break;
+            case COLOR_YELLOW:
+                blocksColored.Yellow += 1
+                break;
+            case COLOR_GREEN:
+                blocksColored.Green += 1
+                break;
+        }
+
+        log(JSON.stringify(blocksColored))
+    }
