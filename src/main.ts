@@ -32,6 +32,10 @@ k.loadFont("retrofont", "fonts/union-soap.regular.ttf");
 
 k.setBackground(237, 237, 237);
 
+
+
+const log = k.debug.log
+
 const COYOTE_TIME = 0.1;
 const ACCELERATION = 2000;
 const MAX_HORZ_SPEED = SPEED;
@@ -44,6 +48,12 @@ const GUN_X_OFFSET = 70;
 const GUN_Y_OFFSET = 70;
 
 const MAX_GUN_HOLD_TIME = 30; // seconds
+
+const COLOR_YELLOW = k.rgb(252, 197, 51);
+const COLOR_GREEN = k.rgb(55, 217, 140);
+const COLOR_BLUE = k.rgb(145, 121, 255);
+const COLOR_RED = k.rgb(252, 132, 140);
+
 
 
 // Gun Stats Definitions
@@ -82,7 +92,7 @@ const playersConfig = [
             right: "d",
         },
         headSprite: "hat",
-        playerColor: k.rgb(252, 197, 51),
+        playerColor: COLOR_YELLOW,
         hasKey: false,
         health: 50,
     },
@@ -96,7 +106,7 @@ const playersConfig = [
             right: "right",
         },
         headSprite: "hat1",
-        playerColor: k.rgb(55, 217, 140),
+        playerColor: COLOR_GREEN,
         hasKey: false,
         health: 50,
     },
@@ -109,7 +119,7 @@ const playersConfig = [
             left: "j",
             right: "l",
         },
-        playerColor: k.rgb(145, 121, 255),
+        playerColor: COLOR_BLUE,
         hasKey: false,
         health: 50,
     },
@@ -122,7 +132,7 @@ const playersConfig = [
             left: "f",
             right: "h",
         },
-        playerColor: k.rgb(252, 132, 140),
+        playerColor: COLOR_RED,
         hasKey: false,
         health: 50,
     },
@@ -156,7 +166,14 @@ k.scene("game", () => {
     const BEAN_HEIGHT = 147;
     const HAT_WIDTH = 115;
 
-    let gameTimer = 30;
+    let gameTimer = 5;
+
+    let blocksColored = {
+        Red: 0,
+        Blue: 0,
+        Green: 0,
+        Yellow: 0,
+    }
 
 
     const tilesConfig = {
@@ -276,7 +293,12 @@ k.scene("game", () => {
         tiles: tilesConfig,
     });
 
-
+    const levelBounds = {
+        minX: - (k.width()/ 2),
+        maxX: k.width() *2,
+        minY: - (k.height()/ 2),
+        maxY: k.height() * 2
+    };
 
     const players = [];
     playersConfig.forEach(playerConfig => {
@@ -429,15 +451,53 @@ k.scene("game", () => {
     k.onCollide("player_entity", "*", (playerObj, other) => {
         if (!other.is("player_entity") && !other.is("chest_block") && !other.is("bullet_obj")) {
             if (playerObj.playerColor) {
+                updateBlockColor(other.color, playerObj.playerColor)
                 other.color = playerObj.playerColor;
             }
         }
     });
 
     k.onCollide("bullet_obj", "colorable", (bullet, blockHit) => {
+        updateBlockColor(blockHit.color, bullet.color)
+
         blockHit.color = bullet.color;
         bullet.destroy();
-    })
+    });
+
+    function updateBlockColor(prev, newColor){
+        if(prev == newColor) return;
+        switch (prev) {
+            case COLOR_RED:
+                blocksColored.Red -= 1
+                break;
+            case COLOR_BLUE:
+                blocksColored.Blue -= 1
+                break;
+            case COLOR_YELLOW:
+                blocksColored.Yellow -= 1
+                break;
+            case COLOR_GREEN:
+                blocksColored.Green -= 1
+                break;
+        }
+
+        switch (newColor) {
+            case COLOR_RED:
+                blocksColored.Red += 1
+                break;
+            case COLOR_BLUE:
+                blocksColored.Blue += 1
+                break;
+            case COLOR_YELLOW:
+                blocksColored.Yellow += 1
+                break;
+            case COLOR_GREEN:
+                blocksColored.Green += 1
+                break;
+        }
+
+        log(JSON.stringify(blocksColored))
+    }
 
     k.onCollide("bullet_obj", "player_entity", (bullet, player) => {
         k.debug.log(player.health, bullet.damage)
@@ -731,7 +791,25 @@ k.scene("game", () => {
     
     
         if (gameTimer <= 0) {
-            k.add([
+            const levelViewCenterX = (levelBounds.minX + levelBounds.maxX) / 2;
+            const levelViewCenterY = (levelBounds.minY + levelBounds.maxY) / 2;
+            const levelViewWidth = levelBounds.maxX - levelBounds.minX;
+            const levelViewHeight = levelBounds.maxY - levelBounds.minY;
+
+            const levelBuffer = 100; 
+            const levelRequiredScaleX = k.width() / (levelViewWidth + levelBuffer);
+            const levelRequiredScaleY = k.height() / (levelViewHeight + levelBuffer);
+            const levelTargetScale = Math.min(levelRequiredScaleX, levelRequiredScaleY);
+
+            k.setCamPos(levelViewCenterX, levelViewCenterY);
+            k.setCamScale(levelTargetScale, levelTargetScale);
+
+            players.forEach(player =>{
+                const { instance } = player;
+                instance.destroy();
+            })
+            
+             k.add([
                 k.text("GAME OVER!", { size: 64, font: "retrofont" }),
                 k.pos(k.width() / 2, k.height() / 2),
                 k.fixed(),
@@ -742,6 +820,7 @@ k.scene("game", () => {
                 "game_over_text"
             ]);
         }
+
     });
 
 
