@@ -143,6 +143,7 @@ let blocksColored = {
     Blue: 0,
     Green: 0,
     Yellow: 0,
+    NumberOfBlocks: 0,
 }
 
 const levelLayout = [
@@ -176,6 +177,7 @@ k.scene("game", () => {
     let gameTimer = 5;
 
     blocksColored = {
+        NumberOfBlocks: 0,
         Red: 0,
         Blue: 0,
         Green: 0,
@@ -300,12 +302,8 @@ k.scene("game", () => {
         tiles: tilesConfig,
     });
 
-    const levelBounds = {
-        minX: - (k.width()/ 2),
-        maxX: k.width() *2,
-        minY: - (k.height()/ 2),
-        maxY: k.height() * 2
-    };
+    blocksColored.NumberOfBlocks = myLevel.get("colorable").length;
+
 
     const players = [];
     playersConfig.forEach(playerConfig => {
@@ -748,45 +746,43 @@ k.scene("game", () => {
         uiElements.secTensDisp.text = `${secTens}`;
         uiElements.secUnitDisp.text = `${secUnits}`;
     
-        const timerColor = gameTimer <= 10 ? k.RED : k.BLACK;
+        let timerColor =  k.BLACK;
+
+
+        if(gameTimer <= 10){
+            timerColor = k.RED;
+            uiElements.minUnitDisp.hidden = true;
+            uiElements.colonDisp.hidden = true;
+            uiElements.secTensDisp.hidden = true;
+
+            uiElements.secUnitDisp.pos.x = k.width() / 2;
+            uiElements.secUnitDisp.pos.y = k.height() / 2;
+
+        }
+
         uiElements.minUnitDisp.color = timerColor;
         uiElements.colonDisp.color = timerColor;
         uiElements.secTensDisp.color = timerColor;
         uiElements.secUnitDisp.color = timerColor;
-    
-    
-        if (gameTimer <= 0) {
-            const levelViewCenterX = (levelBounds.minX + levelBounds.maxX) / 2;
-            const levelViewCenterY = (levelBounds.minY + levelBounds.maxY) / 2;
-            const levelViewWidth = levelBounds.maxX - levelBounds.minX;
-            const levelViewHeight = levelBounds.maxY - levelBounds.minY;
 
-            const levelBuffer = 100; 
-            const levelRequiredScaleX = k.width() / (levelViewWidth + levelBuffer);
-            const levelRequiredScaleY = k.height() / (levelViewHeight + levelBuffer);
-            const levelTargetScale = Math.min(levelRequiredScaleX, levelRequiredScaleY);
-
-            k.setCamPos(levelViewCenterX, levelViewCenterY);
-            k.setCamScale(levelTargetScale, levelTargetScale);
-
-            players.forEach(player =>{
-                const { instance } = player;
-                instance.destroy();
-            })
-            
-             k.add([
-                k.text("GAME OVER!", { size: 64, font: "retrofont" }),
-                k.pos(k.width() / 2, k.height() / 2),
-                k.fixed(),
-                k.opacity(1),
-                k.color(k.RED),
-                k.lifespan(1),
-                k.anchor("center"),
-                "game_over_text"
-            ]);
+        if(gameTimer <= 0) {
+            k.go("gameover")
         }
-
     });
+});
+
+
+
+// game over scene
+k.scene("gameover", () => {
+    k.add([
+        k.text("GAME OVER!", { size: 64, font: "retrofont" }),
+        k.pos(k.width() / 2, k.height() - k.height() / 9),
+        k.fixed(),
+        k.color(k.RED),
+        k.anchor("center"),
+        "game_over_text"
+    ]);
 });
 
 
