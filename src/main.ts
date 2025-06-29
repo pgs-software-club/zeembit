@@ -28,6 +28,10 @@ k.loadSprite("gun1", "sprites/gun1.png");
 k.loadSprite("gun2", "sprites/gun2.png");
 k.loadSprite("bullet", "sprites/bullet.png");
 
+k.loadSprite("bar", "sprites/bar.png");
+
+
+
 k.loadFont("retrofont", "fonts/union-soap.regular.ttf");
 
 k.setBackground(237, 237, 237);
@@ -53,7 +57,10 @@ const COLOR_YELLOW = k.rgb(252, 197, 51);
 const COLOR_GREEN = k.rgb(55, 217, 140);
 const COLOR_BLUE = k.rgb(145, 121, 255);
 const COLOR_RED = k.rgb(252, 132, 140);
+const COLOR_RED_DARK = k.rgb(235, 27, 41);
 
+
+const BAR_GAP = 20;
 
 
 // Gun Stats Definitions
@@ -119,6 +126,7 @@ const playersConfig = [
             left: "j",
             right: "l",
         },
+        headSprite: "",
         playerColor: COLOR_BLUE,
         hasKey: false,
         health: 50,
@@ -132,18 +140,20 @@ const playersConfig = [
             left: "f",
             right: "h",
         },
+        headSprite: "",
         playerColor: COLOR_RED,
         hasKey: false,
         health: 50,
     },
-];
+] as const;
 
-let blocksColored = {
-    Red: 0,
-    Blue: 0,
-    Green: 0,
-    Yellow: 0,
-    NumberOfBlocks: 0,
+let gameState = {
+    player4: 90,
+    player3: 40,
+    player2: 86,
+    player1: 10,
+    NumberOfBlocks: 200,
+    totalPlayers: 4,
 }
 
 const levelLayout = [
@@ -154,7 +164,7 @@ const levelLayout = [
     "b                        b",
     "b           ====         b",
     "b                        b",
-    "b                        b",
+    "b      B                 b",
     "b     ==  w              b",
     "bB        o              b",
     "b=g==\\    afffff    C    b",
@@ -174,14 +184,15 @@ k.scene("game", () => {
     const BEAN_HEIGHT = 147;
     const HAT_WIDTH = 115;
 
-    let gameTimer = 5;
+    let gameTimer = 10;
 
-    blocksColored = {
+    gameState = {
         NumberOfBlocks: 0,
-        Red: 0,
-        Blue: 0,
-        Green: 0,
-        Yellow: 0,
+        player4: 0,
+        player3: 0,
+        player2: 0,
+        player1: 0,
+        totalPlayers: gameState.totalPlayers
     }
 
 
@@ -228,7 +239,6 @@ k.scene("game", () => {
             k.area(),
             k.body({ isStatic: false }),
             k.z(30),
-            k.animate(),
             "colorable",
             "key_item",
         ],
@@ -302,7 +312,7 @@ k.scene("game", () => {
         tiles: tilesConfig,
     });
 
-    blocksColored.NumberOfBlocks = myLevel.get("colorable").length;
+    gameState.NumberOfBlocks = myLevel.get("colorable").length;
 
 
     const players = [];
@@ -331,12 +341,12 @@ k.scene("game", () => {
     });
 
     function setupUI() {
-        const timerTextSize = 69; 
-        const timerYPos = 0; 
+        const timerTextSize = 69;
+        const timerYPos = 0;
 
         const minUnitDisp = k.add([
             k.text("0", { size: timerTextSize, font: "retrofont" }),
-            k.pos( timerTextSize * 0.5, timerYPos),
+            k.pos(timerTextSize * 0.5, timerYPos),
             k.anchor("top"),
             k.fixed(),
             k.color(k.BLACK),
@@ -356,7 +366,7 @@ k.scene("game", () => {
 
         const secTensDisp = k.add([
             k.text("0", { size: timerTextSize, font: "retrofont" }),
-            k.pos( timerTextSize + timerTextSize * 0.9, timerYPos),
+            k.pos(timerTextSize + timerTextSize * 0.9, timerYPos),
             k.anchor("top"),
             k.fixed(),
             k.outline(4),
@@ -366,7 +376,7 @@ k.scene("game", () => {
 
         const secUnitDisp = k.add([
             k.text("0", { size: timerTextSize, font: "retrofont" }),
-            k.pos( timerTextSize + timerTextSize * 1.6, timerYPos),
+            k.pos(timerTextSize + timerTextSize * 1.6, timerYPos),
             k.anchor("top"),
             k.fixed(),
             k.outline(4),
@@ -377,7 +387,7 @@ k.scene("game", () => {
         return { minUnitDisp, colonDisp, secTensDisp, secUnitDisp };
     }
 
-    const uiElements = setupUI(); 
+    const uiElements = setupUI();
 
     const resetPlayer = (playerState) => {
         const new_pos = k.vec2(k.rand(k.width() * 2), -(k.height() - k.rand(500, 700)));
@@ -735,21 +745,21 @@ k.scene("game", () => {
 
         gameTimer -= k.dt();
         gameTimer = Math.max(0, gameTimer);
-    
+
         const minutes = Math.floor(gameTimer / 60);
         const seconds = Math.floor(gameTimer % 60);
-    
+
         const secTens = Math.floor(seconds / 10);
         const secUnits = seconds % 10;
-    
+
         uiElements.minUnitDisp.text = `${minutes % 10}`;
         uiElements.secTensDisp.text = `${secTens}`;
         uiElements.secUnitDisp.text = `${secUnits}`;
-    
-        let timerColor =  k.BLACK;
+
+        let timerColor = k.BLACK;
 
 
-        if(gameTimer <= 10){
+        if (gameTimer <= 10) {
             timerColor = k.RED;
             uiElements.minUnitDisp.hidden = true;
             uiElements.colonDisp.hidden = true;
@@ -765,28 +775,111 @@ k.scene("game", () => {
         uiElements.secTensDisp.color = timerColor;
         uiElements.secUnitDisp.color = timerColor;
 
-        if(gameTimer <= 0) {
+        if (gameTimer <= 0) {
             k.go("gameover")
         }
     });
 });
 
-
-
 // game over scene
 k.scene("gameover", () => {
+
+
+    playersConfig
+        .slice(0, gameState.totalPlayers)
+        .map((player, index) => ({
+            blocksColored: gameState[player.tag],
+            playerIndex: index,
+        }))
+        .sort((a, b) => b.blocksColored - a.blocksColored)
+        .forEach((playerScore, rank) => {
+            const scorePercentage = Math.floor(
+                (playerScore.blocksColored / gameState.NumberOfBlocks) * 100
+            );
+            addBeanOnGameOver(
+                playerScore.playerIndex,
+                scorePercentage,
+                gameState.totalPlayers,
+                rank === 0,
+                rank
+            );
+        });
+
+
+
     k.add([
         k.text("GAME OVER!", { size: 64, font: "retrofont" }),
         k.pos(k.width() / 2, k.height() - k.height() / 9),
         k.fixed(),
-        k.color(k.RED),
+        k.color(k.BLACK),
         k.anchor("center"),
+        k.z(10),
         "game_over_text"
     ]);
 });
 
 
 k.go("game");
+
+
+function addBeanOnGameOver(playerIndex: number, percent: number, totalPlayers: number, hasCrown: boolean, position: number) {
+    const playerInfo = playersConfig[playerIndex]
+    const cur_x_pos = ((k.width() / 2) - 150 * (totalPlayers - playerIndex)) + ((200 * totalPlayers) / 2);
+
+    k.add([
+        k.rect(80, 100),
+        k.pos(cur_x_pos, 250 + k.height() / 2),
+        k.color(playerInfo.playerColor),
+        k.fixed(),
+        k.anchor("bot"),
+        k.z(10),
+        "bar_red_filled"
+    ]);
+
+    k.add([
+        k.sprite("bar"),
+        k.pos(cur_x_pos, 250 + k.height() / 2),
+        k.color(k.BLACK),
+        k.fixed(),
+        k.anchor("bot"),
+        k.z(20),
+        "bar_red"
+    ]);
+
+    k.add([
+        k.text((position + 1).toString(), { size: 69, font: "retrofont" }),
+        k.pos(cur_x_pos, 200 + k.height() / 2),
+        k.z(30),
+        k.anchor("center"),
+        k.color(k.BLACK)
+    ]);
+
+    k.add([
+        k.text(percent.toString() + "%", { size: 40, font: "retrofont" }),
+        k.pos((cur_x_pos) + 20, 300 + k.height() / 2),
+        k.z(30),
+        k.anchor("center"),
+        k.color(playerInfo.playerColor)
+    ]);
+
+    if (hasCrown) {
+        k.add([
+            k.text("👑", { size: 64, }),
+            k.pos(cur_x_pos, (k.height() / 2) - 20),
+            k.fixed(),
+            k.anchor("center"),
+            k.z(40),
+            "game_over_text"
+        ]);
+    }
+
+    k.add([
+        k.sprite(playerInfo.sprite),
+        k.pos(cur_x_pos, 0 + ((k.height() / 2) + (90))),
+        k.scale(0.7),
+        k.anchor("bot")
+    ]);
+}
 
 
 function dropGun(x: number, y: number) {
@@ -803,37 +896,37 @@ function dropGun(x: number, y: number) {
     ])
 }
 
-function updateBlockColor(prev, newColor){
-        if(prev == newColor) return;
-        switch (prev) {
-            case COLOR_RED:
-                blocksColored.Red -= 1
-                break;
-            case COLOR_BLUE:
-                blocksColored.Blue -= 1
-                break;
-            case COLOR_YELLOW:
-                blocksColored.Yellow -= 1
-                break;
-            case COLOR_GREEN:
-                blocksColored.Green -= 1
-                break;
-        }
-
-        switch (newColor) {
-            case COLOR_RED:
-                blocksColored.Red += 1
-                break;
-            case COLOR_BLUE:
-                blocksColored.Blue += 1
-                break;
-            case COLOR_YELLOW:
-                blocksColored.Yellow += 1
-                break;
-            case COLOR_GREEN:
-                blocksColored.Green += 1
-                break;
-        }
-
-        log(JSON.stringify(blocksColored))
+function updateBlockColor(prev, newColor) {
+    if (prev == newColor) return;
+    switch (prev) {
+        case COLOR_RED:
+            gameState.player4 -= 1
+            break;
+        case COLOR_BLUE:
+            gameState.player3 -= 1
+            break;
+        case COLOR_YELLOW:
+            gameState.player1 -= 1
+            break;
+        case COLOR_GREEN:
+            gameState.player2 -= 1
+            break;
     }
+
+    switch (newColor) {
+        case COLOR_RED:
+            gameState.player4 += 1
+            break;
+        case COLOR_BLUE:
+            gameState.player3 += 1
+            break;
+        case COLOR_YELLOW:
+            gameState.player1 += 1
+            break;
+        case COLOR_GREEN:
+            gameState.player2 += 1
+            break;
+    }
+
+    log(JSON.stringify(gameState))
+}
