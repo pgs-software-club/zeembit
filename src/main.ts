@@ -1,4 +1,5 @@
 import kaplay, { AnchorComp, AreaComp, GameObj, PosComp, ScaleComp, TextComp } from "kaplay";
+import { map } from "./maps";
 
 const k = kaplay();
 const SPEED = 1000;
@@ -38,7 +39,7 @@ k.setBackground(237, 237, 237);
 
 
 
-const log = k.debug.log
+const log = (v)=>{}
 
 const COYOTE_TIME = 0.1;
 const ACCELERATION = 2000;
@@ -90,6 +91,7 @@ const GUN_STATS = {
 
 const playersConfig = [
     {
+        id: 1,
         tag: "player1",
         sprite: "bean",
         spawnChar: "@",
@@ -104,6 +106,7 @@ const playersConfig = [
         health: 50,
     },
     {
+        id: 2,
         tag: "player2",
         sprite: "bean1",
         spawnChar: "$",
@@ -118,6 +121,7 @@ const playersConfig = [
         health: 50,
     },
     {
+        id: 3,
         tag: "player3",
         sprite: "bean2",
         spawnChar: "%",
@@ -132,6 +136,7 @@ const playersConfig = [
         health: 50,
     },
     {
+        id: 4,
         tag: "player4",
         sprite: "bean3",
         spawnChar: "&",
@@ -156,20 +161,6 @@ let gameState = {
     totalPlayers: 4,
 }
 
-const levelLayout = [
-    "b    %                &  b",
-    "b   ===              === b",
-    "b   @           $        b",
-    "b            K           b",
-    "b                        b",
-    "b           ====         b",
-    "b                        b",
-    "b      B                 b",
-    "b     ==  w              b",
-    "bB        o              b",
-    "b=g==\\    afffff    C    b",
-    "======g==b=-nnn-==gg======",
-];
 
 
 // setInterval(()=>{
@@ -184,7 +175,7 @@ k.scene("game", () => {
     const BEAN_HEIGHT = 147;
     const HAT_WIDTH = 115;
 
-    let gameTimer = 10;
+    let gameTimer = 80;
 
     gameState = {
         NumberOfBlocks: 0,
@@ -297,6 +288,7 @@ k.scene("game", () => {
                     k.vec2(-BEAN_WIDTH * 0.5, -BEAN_HEIGHT * 0.2)
                 ]),
             }),
+
             k.z(10),
             k.anchor("bot"),
             k.body(),
@@ -306,6 +298,7 @@ k.scene("game", () => {
         ];
     });
 
+    const levelLayout = map[Math.floor(Math.random() * map.length)];
     const myLevel = k.addLevel(levelLayout, {
         tileWidth: LEVEL_TILE_WIDTH,
         tileHeight: LEVEL_TILE_HEIGHT,
@@ -337,6 +330,13 @@ k.scene("game", () => {
                     "hat",
                 ]);
             }
+            playerInstance.add([
+                k.text(String(playerConfig.id), { size: 100, font: "retrofont" }),
+                k.pos(0, -BEAN_HEIGHT - 70),
+                k.color(k.BLACK),
+                k.anchor("bot"),
+                "id",
+            ]);
         }
     });
 
@@ -391,7 +391,7 @@ k.scene("game", () => {
 
     const resetPlayer = (playerState) => {
         const new_pos = k.vec2(k.rand(k.width() * 2), -(k.height() - k.rand(500, 700)));
-        k.debug.log(new_pos)
+        // k.debug.log(new_pos)
         playerState.pos.x = new_pos.x;
         playerState.pos.y = new_pos.y;
         playerState.vel.x = 0;
@@ -473,7 +473,7 @@ k.scene("game", () => {
     });
 
     k.onCollide("bullet_obj", "player_entity", (bullet, player) => {
-        k.debug.log(player.health, bullet.damage)
+        // k.debug.log(player.health, bullet.damage)
         player.health -= bullet.damage;
         if (player.health <= 0) {
             player.health = 0;
@@ -783,7 +783,9 @@ k.scene("game", () => {
 
 // game over scene
 k.scene("gameover", () => {
-
+    k.onKeyPress("space", () => {
+        k.go("title");
+    });
 
     playersConfig
         .slice(0, gameState.totalPlayers)
@@ -796,13 +798,15 @@ k.scene("gameover", () => {
             const scorePercentage = Math.floor(
                 (playerScore.blocksColored / gameState.NumberOfBlocks) * 100
             );
-            addBeanOnGameOver(
-                playerScore.playerIndex,
-                scorePercentage,
-                gameState.totalPlayers,
-                rank === 0,
-                rank
-            );
+            if(scorePercentage >= 4) {
+                addBeanOnGameOver(
+                    playerScore.playerIndex,
+                    scorePercentage,
+                    gameState.totalPlayers,
+                    rank === 0,
+                    rank
+                );    
+            } 
         });
 
 
@@ -819,7 +823,100 @@ k.scene("gameover", () => {
 });
 
 
-k.go("game");
+k.scene("title", () => {
+    k.add([
+        k.rect(k.width(), k.height()),
+        k.color(200, 200, 200),
+        k.pos(0, 0),
+        k.fixed(),
+        k.z(0),
+    ]);
+
+    // Add some decorative elements for blur effect
+    for (let i = 0; i < 20; i++) {
+        k.add([
+            k.circle(k.rand(20, 60)),
+            k.pos(k.rand(k.width()), k.rand(k.height())),
+            k.color(k.rand(100, 255), k.rand(100, 255), k.rand(100, 255)),
+            k.opacity(0.3),
+            k.fixed(),
+            k.z(1),
+        ]);
+    }
+
+    // Colorful animated title - each letter in different color
+    const titleLetters = "ZEEMBIT";
+    const colors = [COLOR_YELLOW, COLOR_GREEN, COLOR_BLUE, COLOR_RED];
+    
+    titleLetters.split('').forEach((letter, i) => {
+        const letterObj = k.add([
+            k.text(letter, { size: 120, font: "retrofont" }),
+            k.pos(k.width() / 2 - 300 + i * 100, k.height() / 2 - 100),
+            k.anchor("center"),
+            k.color(colors[i % colors.length]),
+            k.fixed(),
+            k.z(10),
+            "title_letter",
+        ]);
+        
+        // Add floating animation to each letter
+        letterObj.onUpdate(() => {
+            letterObj.pos.y += Math.sin(k.time() * 2 + i * 0.5) * 0.5;
+        });
+    });
+
+    // Start button
+     k.add([
+        k.rect(500, 50),
+        k.pos(k.width() / 2, k.height() / 2 + 160),
+        k.anchor("center"),
+        k.color(COLOR_GREEN),
+        k.outline(3, k.BLACK),
+        k.area(),
+        k.fixed(),
+        k.z(10),
+        "start_button",
+    ]);
+
+    k.add([
+        k.text("Press SPACE to START GAME", { size: 24, font: "retrofont" }),
+        k.pos(k.width() / 2, k.height() / 2 + 160),
+        k.anchor("center"),
+        k.color(k.BLACK),
+        k.fixed(),
+        k.z(11),
+    ]);
+
+
+
+    // Start game handler
+    k.onClick("start_button", () => {
+        k.go("game");
+    });
+
+    
+
+    k.onKeyPress("space", () => {
+        k.go("game");
+    });
+
+    // Add some sparkle effects
+    k.onUpdate(() => {
+        if (k.rand(100) < 0.02) {
+            k.add([
+                k.circle(3),
+                k.pos(k.rand(k.width()), k.rand(k.height())),
+                k.color(colors[Math.floor(k.rand(100) * colors.length)]),
+                k.opacity(0.8),
+                k.lifespan(2),
+                k.fixed(),
+                k.z(5),
+            ]);
+        }
+    });
+});
+
+k.go("title");
 
 
 function addBeanOnGameOver(playerIndex: number, percent: number, totalPlayers: number, hasCrown: boolean, position: number) {
@@ -928,5 +1025,5 @@ function updateBlockColor(prev, newColor) {
             break;
     }
 
-    log(JSON.stringify(gameState))
+    // log(JSON.stringify(gameState))
 }
